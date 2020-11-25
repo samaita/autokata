@@ -7,7 +7,7 @@ import (
 )
 
 // RemoveHtmlTag A HREF should be collected
-func RemoveHtmlTag(in string) string {
+func removeHtmlTag(in string) string {
 	// regex to match html tag
 	const pattern = `(<\/?[a-zA-A]+?[^>]*\/?>)*`
 	r := regexp.MustCompile(pattern)

@@ -12,21 +12,6 @@ var (
 	APITimeout = 60 * time.Second
 )
 
-// type Item struct {
-// 	Title         string                   `json:"title,omitempty"`
-// 	Link          string                   `json:"link,omitempty"`
-// 	Description   string                   `json:"description,omitempty"`
-// 	Content       string                   `json:"content,omitempty"`
-// 	Author        string                   `json:"author,omitempty"`
-// 	Categories    []*Category              `json:"categories,omitempty"`
-// 	Comments      string                   `json:"comments,omitempty"`
-// 	Enclosure     *Enclosure               `json:"enclosure,omitempty"`
-// 	GUID          *GUID                    `json:"guid,omitempty"`
-// 	PubDate       string                   `json:"pubDate,omitempty"`
-// 	PubDateParsed *time.Time               `json:"pubDateParsed,omitempty"`
-// 	Source        *Source                  `json:"source,omitempty"`
-// }
-
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -39,7 +24,7 @@ func main() {
 		totalNew        int
 	)
 
-	listDomain, errGetAllDomain := GetAllDomain()
+	listDomain, errGetAllDomain := getAllDomain()
 	if errGetAllDomain != nil {
 		log.Println(errGetAllDomain)
 		return
@@ -49,13 +34,13 @@ func main() {
 		crawl := NewCrawl()
 		crawl.DomainID = domain.DomainID
 
-		errGetCrawlID := crawl.GetCrawlID()
+		errGetCrawlID := crawl.getCrawlID()
 		if errGetCrawlID != nil {
 			log.Println(errGetCrawlID, domain.DomainURL)
 			continue
 		}
 
-		feeds, errGetRSSFeed := GetRSSFeed(context.Background(), domain.FeedsURL)
+		feeds, errGetRSSFeed := getRSSFeed(context.Background(), domain.FeedsURL)
 		if errGetRSSFeed != nil {
 			log.Println(errGetRSSFeed, domain.DomainURL)
 			continue
@@ -64,7 +49,7 @@ func main() {
 		for _, feed := range feeds {
 			feed.CrawlLogID = crawl.CrawlLogID
 			feed.DomainID = crawl.DomainID
-			isExist, errExist := feed.IsExist()
+			isExist, errExist := feed.isExist()
 			if errExist != nil {
 				log.Println(errExist, feed.ArticleURL)
 				continue
@@ -73,7 +58,7 @@ func main() {
 				continue
 			}
 			totalNew++
-			feed.Save()
+			feed.save()
 		}
 
 		if totalNew > 0 {

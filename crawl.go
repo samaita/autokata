@@ -18,7 +18,7 @@ func NewCrawl() Crawl {
 	return Crawl{}
 }
 
-func (c *Crawl) GetCrawlID() error {
+func (c *Crawl) getCrawlID() error {
 	if c.CrawlLogID != 0 {
 		return fmt.Errorf("Crawl ID is not 0, Got %d", c.CrawlLogID)
 	}

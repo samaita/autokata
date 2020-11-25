@@ -31,7 +31,7 @@ type Feed struct {
 }
 
 // GetRSSFeed obtain feed then translate to our definition
-func GetRSSFeed(ctx context.Context, RSSUrl string) ([]Feed, error) {
+func getRSSFeed(ctx context.Context, RSSUrl string) ([]Feed, error) {
 	var (
 		Feeds []Feed
 	)
@@ -49,7 +49,7 @@ func GetRSSFeed(ctx context.Context, RSSUrl string) ([]Feed, error) {
 		var f Feed
 		f.ArticleURL = item.Link
 		f.ArticleTitle = item.Title
-		f.ArticleSummary = RemoveHtmlTag(item.Description)
+		f.ArticleSummary = removeHtmlTag(item.Description)
 		f.ArticlePublishTime = *item.PublishedParsed
 		f.CreateTime = time.Now().UTC()
 		f.Status = ArticlePublished
@@ -59,7 +59,7 @@ func GetRSSFeed(ctx context.Context, RSSUrl string) ([]Feed, error) {
 	return Feeds, nil
 }
 
-func (f *Feed) IsExist() (bool, error) {
+func (f *Feed) isExist() (bool, error) {
 	var (
 		b        bool
 		s        int
@@ -76,7 +76,7 @@ func (f *Feed) IsExist() (bool, error) {
 	return b, nil
 }
 
-func (f *Feed) Save() error {
+func (f *Feed) save() error {
 	query := `
 		INSERT INTO db_article (
 			crawl_log_id,

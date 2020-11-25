@@ -15,7 +15,7 @@ type Domain struct {
 	CreateTime time.Time
 }
 
-func GetAllDomain() ([]Domain, error) {
+func getAllDomain() ([]Domain, error) {
 	var (
 		errParse, errQuery, errScan error
 		Domains                     []Domain
