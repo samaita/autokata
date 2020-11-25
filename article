@@ -1,0 +1,16 @@
+	//GetArticleContent("https://techcrunch.com/2020/11/19/mixtape-podcast-building-a-structural-dei-response-to-a-systemic-issue-with-y-vonne-hutchinson/")
+
+// func GetArticleContent(url string) {
+// 	c := colly.NewCollector()
+
+// 	// Find and visit all links
+// 	c.OnHTML("meta[property]", func(e *colly.HTMLElement) {
+// 		log.Println(e.Attr("property"), e.Attr("content"))
+// 	})
+
+// 	c.OnRequest(func(r *colly.Request) {
+// 		fmt.Println("Visiting", r.URL)
+// 	})
+
+// 	c.Visit(url)
+// }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	DB "github.com/samaita/autokata/sql"
 )
 
@@ -19,6 +20,23 @@ func init() {
 }
 
 func main() {
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
+
+	defaultRoute := r.Group("/")
+	defaultRoute.Use(
+		basicMiddleware(),
+	)
+	{
+		defaultRoute.POST("/domain/add", handleDomainAdd)
+		defaultRoute.POST("/domain/remove", handleDomainRemove)
+	}
+
+	r.Run(":8080")
+}
+
+func fetchNewBatchRSS() {
 	var (
 		errGetAllDomain error
 		totalNew        int
@@ -65,5 +83,4 @@ func main() {
 			log.Println(totalNew, "new article(s)!")
 		}
 	}
-
 }
