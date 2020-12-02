@@ -10,12 +10,26 @@ import (
 
 var (
 	APITimeout = 60 * time.Second
+
+	Bot              TelegramBot
+	botToken, chatID string
+	err              error
 )
 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	DB.InitDB()
+
+	if botToken, err = getKV("telegram_bot_token"); err != nil {
+		log.Fatalln(err)
+	}
+	if chatID, err = getKV("telegram_chat_id"); err != nil {
+		log.Fatalln(err)
+	}
+
+	Bot = NewTelegramBot(botToken, chatID)
+	Bot.SendMessage("Service Started")
 }
 
 func main() {
