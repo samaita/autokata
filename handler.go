@@ -52,17 +52,39 @@ func handleDomainRemove(c *gin.Context) {
 	domain := NewDomain()
 	domain.DomainURL = c.PostForm("domain_url")
 
-	if isExist, err = domain.isExist(); err != nil {
+	if isExist, err = domain.isExist(); err != nil || !isExist {
+		if isExist {
+			err = fmt.Errorf("Domain not found")
+		}
 		HTTPInternalServerError(c, err.Error(), response)
 		return
 	}
 
-	if isExist {
-		if err = domain.remove(); err != nil {
-			HTTPInternalServerError(c, err.Error(), response)
-			return
-		}
+	if err = domain.remove(); err != nil {
+		HTTPInternalServerError(c, err.Error(), response)
+		return
 	}
+
+	response[fieldSuccess] = valueSuccess
+	HTTPSuccessResponse(c, response)
+	return
+}
+
+func handleDomainList(c *gin.Context) {
+	var (
+		err        error
+		listDomain []Domain
+	)
+
+	response := getInitialResponse()
+
+	if listDomain, err = getAllDomain(); err != nil {
+		HTTPInternalServerError(c, err.Error(), response)
+		return
+	}
+
+	response["data"] = listDomain
+	response["total_data"] = len(listDomain)
 
 	response[fieldSuccess] = valueSuccess
 	HTTPSuccessResponse(c, response)

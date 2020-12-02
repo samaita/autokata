@@ -31,9 +31,10 @@ func main() {
 	{
 		defaultRoute.POST("/domain/add", handleDomainAdd)
 		defaultRoute.POST("/domain/remove", handleDomainRemove)
+		defaultRoute.GET("/domain/list", handleDomainList)
 	}
 
-	r.Run(":8080")
+	r.Run(":3000")
 }
 
 func fetchNewBatchRSS() {
