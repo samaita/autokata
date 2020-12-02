@@ -23,16 +23,17 @@ func handleDomainAdd(c *gin.Context) {
 		return
 	}
 
-	if isExist, err = domain.isExist(); err != nil {
+	if isExist, err = domain.isExist(); err != nil || isExist {
+		if isExist {
+			err = fmt.Errorf("Domain already exists")
+		}
 		HTTPInternalServerError(c, err.Error(), response)
 		return
 	}
 
-	if !isExist {
-		if err = domain.add(); err != nil {
-			HTTPInternalServerError(c, err.Error(), response)
-			return
-		}
+	if err = domain.add(); err != nil {
+		HTTPInternalServerError(c, err.Error(), response)
+		return
 	}
 
 	response[fieldSuccess] = valueSuccess

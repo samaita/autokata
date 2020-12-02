@@ -9,11 +9,11 @@ import (
 )
 
 type Domain struct {
-	DomainID   int64
-	DomainName string
-	DomainURL  string
-	FeedsURL   string
-	CreateTime time.Time
+	DomainID   int64     `json:"domain_id"`
+	DomainName string    `json:"domain_name"`
+	DomainURL  string    `json:"domain_url"`
+	FeedsURL   string    `json:"feeds_url"`
+	CreateTime time.Time `json:"create_time"`
 }
 
 func getAllDomain() ([]Domain, error) {

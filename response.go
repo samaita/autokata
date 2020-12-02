@@ -18,11 +18,9 @@ type HeaderHTTPResponse struct {
 	ProcessTime  string `json:"process_time"`
 	ErrorMessage string `json:"error_message,omitempty"`
 }
-
 type DataHTTPResponse struct {
-	Header  HeaderHTTPResponse `json:"header"`
-	Data    interface{}        `json:"data"`
-	Success bool               `json:"is_success"`
+	Header HeaderHTTPResponse `json:"header"`
+	Data   interface{}        `json:"data"`
 }
 
 func getInitialResponse() map[string]interface{} {
@@ -70,7 +68,6 @@ func HTTPSuccessResponse(c *gin.Context, data interface{}) {
 	var response DataHTTPResponse
 	response.getProcessTime(c)
 	response.Data = data
-	response.Success = true
 
 	c.JSON(http.StatusOK, response)
 }
