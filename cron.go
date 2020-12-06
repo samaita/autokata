@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/robfig/cron"
@@ -23,6 +24,7 @@ func handleCronFetchBatchRSS() {
 	var (
 		errGetAllDomain error
 		totalNew        int
+		titles          string
 	)
 
 	listDomain, errGetAllDomain := getAllDomain()
@@ -59,11 +61,17 @@ func handleCronFetchBatchRSS() {
 				continue
 			}
 			totalNew++
+			titles = fmt.Sprintf(`%s
+
+%s: %s`, titles, feed.ArticleTitle, feed.ArticleURL)
 			feed.save()
 		}
 
 		if totalNew > 0 {
-			log.Println(totalNew, "new article(s)! from ", domain.DomainName)
+			Bot.SendMessage(fmt.Sprintf(`%d new article(s) from %s!%s`, totalNew, domain.DomainName, titles))
+			titles = ""
+			totalNew = 0
 		}
+
 	}
 }

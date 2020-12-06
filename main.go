@@ -21,6 +21,7 @@ func init() {
 
 	DB.InitDB()
 
+	// set to multiple value, separate init to another file
 	if botToken, err = getKV("telegram_bot_token"); err != nil {
 		log.Fatalln(err)
 	}
@@ -29,7 +30,6 @@ func init() {
 	}
 
 	Bot = NewTelegramBot(botToken, chatID)
-	Bot.SendMessage("Service Started")
 }
 
 func main() {
