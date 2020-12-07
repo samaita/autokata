@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/robfig/cron"
 )
@@ -18,6 +19,45 @@ func InitCronHourlyCrawler() {
 		log.Println("Cron HourlyCrawler Completed")
 	})
 	c.Start()
+}
+
+func InitCronBotFetchUpdate() {
+	c := cron.New()
+	rule := "* * * * *"
+	log.Println("Cron BotFetchUpdate Scheduled:", rule)
+	c.AddFunc(rule, func() {
+		log.Println("Cron BotFetchUpdate Started")
+		handleCronBotFetchUpdate()
+	})
+	c.Start()
+}
+
+func handleCronBotFetchUpdate() {
+	var (
+		tu  TelegramUpdate
+		err error
+	)
+
+	if tu, err = Bot.GetUpdate(); err != nil {
+		log.Println(err)
+		return
+	}
+
+	tu.GetLastUpdateID()
+	lastInput := tu.GetLastUpdateMessage("/command")
+	parsedLastInput := strings.ToLower(strings.ReplaceAll(lastInput, "/command ", ""))
+	log.Println(lastInput, parsedLastInput)
+	switch parsedLastInput {
+	case "echo":
+		Bot.SendMessage("Echo")
+	case "list":
+		Bot.SendMessage("/command echo: send echo. Dah itu aja")
+	case "":
+		log.Println("No New Input")
+	default:
+		log.Println(parsedLastInput, "Command Unknown, try another: /command list")
+	}
+	return
 }
 
 func handleCronFetchBatchRSS() {

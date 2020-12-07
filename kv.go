@@ -21,3 +21,21 @@ func getKV(k string) (string, error) {
 	}
 	return v, nil
 }
+
+func setKV(k, v string) error {
+	var (
+		errQuery error
+	)
+
+	query := `UPDATE kv SET value = $1 WHERE key = $2`
+	tx, errQuery := DB.Collection.Main.Beginx()
+	if errQuery != nil {
+		log.Println(errQuery, query)
+		return errQuery
+	}
+	if _, errQuery = tx.Exec(query, v, k); errQuery != nil {
+		return errQuery
+	}
+	tx.Commit()
+	return nil
+}

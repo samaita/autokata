@@ -50,6 +50,7 @@ func main() {
 
 	go func() {
 		InitCronHourlyCrawler()
+		InitCronBotFetchUpdate()
 	}()
 
 	r.Run(":3000")
