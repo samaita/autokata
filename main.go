@@ -45,6 +45,7 @@ func main() {
 		defaultRoute.POST("/domain/add", handleDomainAdd)
 		defaultRoute.POST("/domain/remove", handleDomainRemove)
 		defaultRoute.GET("/domain/list", handleDomainList)
+		defaultRoute.GET("/feed/list", handleFeedList)
 	}
 
 	go func() {

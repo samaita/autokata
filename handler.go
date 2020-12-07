@@ -90,3 +90,23 @@ func handleDomainList(c *gin.Context) {
 	HTTPSuccessResponse(c, response)
 	return
 }
+
+func handleFeedList(c *gin.Context) {
+	var (
+		err      error
+		listFeed []Feed
+	)
+
+	response := getInitialResponse()
+
+	if listFeed, err = getAllFeed(); err != nil {
+		HTTPInternalServerError(c, err.Error(), response)
+		return
+	}
+
+	response["data"] = listFeed
+	response["total_data"] = len(listFeed)
+
+	response[fieldSuccess] = valueSuccess
+	HTTPSuccessResponse(c, response)
+}

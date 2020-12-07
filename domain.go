@@ -35,13 +35,11 @@ func getAllDomain() ([]Domain, error) {
 			d Domain
 			t string
 		)
-		errScan = rows.Scan(&d.DomainID, &d.DomainName, &d.DomainURL, &d.FeedsURL, &t)
-		if errScan != nil {
+		if errScan = rows.Scan(&d.DomainID, &d.DomainName, &d.DomainURL, &d.FeedsURL, &t); errScan != nil {
 			log.Println(errScan)
 			continue
 		}
-		d.CreateTime, errParse = time.Parse(time.RFC3339, t)
-		if errParse != nil {
+		if d.CreateTime, errParse = time.Parse(time.RFC3339, t); errParse != nil {
 			log.Println(errParse, t)
 			continue
 		}
@@ -82,8 +80,7 @@ func (d *Domain) add() error {
 	if err != nil {
 		return err
 	}
-	d.DomainID, err = result.LastInsertId()
-	if errQuery != nil {
+	if d.DomainID, err = result.LastInsertId(); errQuery != nil {
 		log.Println(errQuery, query)
 		return errQuery
 	}
