@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -106,6 +107,34 @@ func handleFeedList(c *gin.Context) {
 
 	response["data"] = listFeed
 	response["total_data"] = len(listFeed)
+
+	response[fieldSuccess] = valueSuccess
+	HTTPSuccessResponse(c, response)
+	return
+}
+
+func handleFeedFetch(c *gin.Context) {
+	var (
+		err error
+	)
+
+	response := getInitialResponse()
+
+	feed := NewFeed()
+	articleIDStr, _ := c.GetQuery("article_id")
+
+	if feed.ArticleID, err = strconv.ParseInt(articleIDStr, 10, 64); err != nil {
+		HTTPBadRequest(c, err.Error(), response)
+		return
+	}
+
+	if err = feed.Load(); err != nil {
+		HTTPInternalServerError(c, err.Error(), response)
+		return
+	}
+
+	response["data"] = feed
+	response["total_data"] = 1
 
 	response[fieldSuccess] = valueSuccess
 	HTTPSuccessResponse(c, response)

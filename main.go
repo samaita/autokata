@@ -46,11 +46,12 @@ func main() {
 		defaultRoute.POST("/domain/remove", handleDomainRemove)
 		defaultRoute.GET("/domain/list", handleDomainList)
 		defaultRoute.GET("/feed/list", handleFeedList)
+		defaultRoute.GET("/feed/fetch", handleFeedFetch)
 	}
 
 	go func() {
 		InitCronHourlyCrawler()
-		InitCronBotFetchUpdate()
+		// InitCronBotFetchUpdate()
 	}()
 
 	r.Run(":3000")

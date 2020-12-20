@@ -3,15 +3,19 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
+	"github.com/gocolly/colly"
 	"github.com/mmcdole/gofeed"
 	DB "github.com/samaita/autokata/sql"
 )
 
 const (
-	ArticlePublished = 1
+	ArticleExist  = 1
+	ArticleStored = 2
 )
 
 type Feed struct {
@@ -52,7 +56,7 @@ func getRSSFeed(ctx context.Context, RSSUrl string) ([]Feed, error) {
 		f.ArticleSummary = removeHtmlTag(item.Description)
 		f.ArticlePublishTime = *item.PublishedParsed
 		f.CreateTime = time.Now().UTC()
-		f.Status = ArticlePublished
+		f.Status = ArticleExist
 		Feeds = append(Feeds, f)
 	}
 
@@ -97,7 +101,11 @@ func getAllFeed() ([]Feed, error) {
 
 }
 
-func (f *Feed) isExist() (bool, error) {
+func NewFeed() Feed {
+	return Feed{}
+}
+
+func (f *Feed) isURLExist() (bool, error) {
 	var (
 		b        bool
 		s        int
@@ -121,12 +129,14 @@ func (f *Feed) save() error {
 			domain_id,
 			article_title,
 			article_url,
+			article_cover_image,
 			article_summary,
+			article_content,
 			article_publish_time,
 			create_time,
 			status
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
 	tx, errQuery := DB.Collection.Main.Beginx()
@@ -134,7 +144,7 @@ func (f *Feed) save() error {
 		log.Println(errQuery, query)
 		return errQuery
 	}
-	result, err := tx.Exec(query, f.CrawlLogID, f.DomainID, f.ArticleTitle, f.ArticleURL, f.ArticleSummary, f.ArticlePublishTime.Format(time.RFC3339), time.Now().UTC().Format(time.RFC3339), f.Status)
+	result, err := tx.Exec(query, f.CrawlLogID, f.DomainID, f.ArticleTitle, f.ArticleURL, f.ArticleCoverImage, f.ArticleSummary, f.ArticleContent, f.ArticlePublishTime.Format(time.RFC3339), time.Now().UTC().Format(time.RFC3339), f.Status)
 	if err != nil {
 		return err
 	}
@@ -144,6 +154,73 @@ func (f *Feed) save() error {
 		return errQuery
 	}
 	tx.Commit()
+
+	return nil
+}
+
+func (f *Feed) Load() error {
+	var (
+		err error
+	)
+
+	if err = f.LoadFromDB(); err != nil {
+		return err
+	}
+
+	if f.Status < ArticleStored {
+		if err = f.Populate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (f *Feed) Populate() error {
+	var (
+		s string
+	)
+
+	c := colly.NewCollector()
+
+	// Find and visit all links
+	c.OnHTML(".ArticlePage-mainContent", func(e *colly.HTMLElement) {
+		a := strings.Replace(e.Text, "  ", "", -1)
+		a = strings.Replace(a, "\n", "", -1)
+		s = fmt.Sprintf("%s%s", s, a)
+		f.ArticleContent = s
+	})
+
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("Visiting", r.URL)
+	})
+
+	log.Println("DO", f.ArticleURL)
+
+	c.Visit(f.ArticleURL)
+	return nil
+}
+
+func (f *Feed) LoadFromDB() error {
+	var (
+		errQuery, errParse error
+		tp, tc             string
+	)
+
+	query := "SELECT domain_id, article_id, article_title, article_url, article_cover_image, article_summary, article_content, article_publish_time, create_time, status FROM db_article WHERE article_id = $1"
+	errQuery = DB.Collection.Main.QueryRowx(query, f.ArticleID).Scan(&f.DomainID, &f.ArticleID, &f.ArticleTitle, &f.ArticleURL, &f.ArticleCoverImage, &f.ArticleSummary, &f.ArticleContent, &tp, &tc, &f.Status)
+	if errQuery != nil && errQuery != sql.ErrNoRows {
+		log.Println(errQuery, query)
+		return errQuery
+	}
+	if f.ArticlePublishTime, errParse = time.Parse(time.RFC3339, tp); errParse != nil {
+		log.Println(errParse, tp)
+		return errParse
+	}
+	if f.CreateTime, errParse = time.Parse(time.RFC3339, tc); errParse != nil {
+		log.Println(errParse, tc)
+		return errParse
+	}
 
 	return nil
 }

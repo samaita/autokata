@@ -92,7 +92,7 @@ func handleCronFetchBatchRSS() {
 		for _, feed := range feeds {
 			feed.CrawlLogID = crawl.CrawlLogID
 			feed.DomainID = crawl.DomainID
-			isExist, errExist := feed.isExist()
+			isExist, errExist := feed.isURLExist()
 			if errExist != nil {
 				log.Println(errExist, feed.ArticleURL)
 				continue
