@@ -9,7 +9,7 @@ import (
 	"github.com/robfig/cron"
 )
 
-func InitCronHourlyCrawler() {
+func InitCronHourlyCrawlerByRSS() {
 	c := cron.New()
 	rule := "0 * * * *"
 	log.Println("Cron HourlyCrawler Scheduled:", rule)
@@ -17,6 +17,18 @@ func InitCronHourlyCrawler() {
 		log.Println("Cron HourlyCrawler Started")
 		handleCronFetchBatchRSS()
 		log.Println("Cron HourlyCrawler Completed")
+	})
+	c.Start()
+}
+
+func InitCronHourlyCrawlerByURL() {
+	c := cron.New()
+	rule := "* * * * *"
+	log.Println("Cron HourlyCrawler By URL Scheduled:", rule)
+	c.AddFunc(rule, func() {
+		log.Println("Cron HourlyCrawler By URL Started")
+		handleCronFetchBatchURL()
+		log.Println("Cron HourlyCrawler By URL Completed")
 	})
 	c.Start()
 }
@@ -113,5 +125,65 @@ func handleCronFetchBatchRSS() {
 			totalNew = 0
 		}
 
+	}
+}
+
+func handleCronFetchBatchURL() {
+	var (
+		errGetAllDomain, errGetCrawlID, errGetAllPos, errGetURLFeed error
+		totalNew                                                    int
+		titles                                                      string
+		feeds                                                       []Feed
+		listDomain                                                  []Domain
+	)
+
+	if listDomain, errGetAllDomain = getAllDomain(); errGetAllDomain != nil {
+		log.Println(errGetAllDomain)
+		return
+	}
+
+	for _, domain := range listDomain {
+		crawl := NewCrawl()
+		crawl.DomainID = domain.DomainID
+
+		if errGetCrawlID = crawl.getCrawlID(); errGetCrawlID != nil {
+			log.Println(errGetCrawlID, domain.DomainURL)
+			continue
+		}
+		if errGetAllPos = domain.getAllPos(); errGetAllPos != nil {
+			log.Println(errGetAllPos, domain.DomainURL)
+			continue
+		}
+		if feeds, errGetURLFeed = domain.getURLFeed(); errGetURLFeed != nil {
+			log.Println(errGetURLFeed, domain.DomainURL)
+			continue
+		}
+
+		for _, feed := range feeds {
+			var (
+				errExist error
+				isExist  bool
+			)
+
+			feed.CrawlLogID = crawl.CrawlLogID
+			feed.DomainID = crawl.DomainID
+
+			if isExist, errExist = feed.isURLExist(); errExist != nil || isExist {
+				log.Println(errExist, feed.ArticleURL, "Exist:", isExist)
+				continue
+			}
+
+			totalNew++
+			titles = fmt.Sprintf(`%s
+
+%s: %s`, titles, feed.ArticleTitle, feed.ArticleURL)
+			feed.save()
+		}
+
+		if totalNew > 0 {
+			Bot.SendMessage(fmt.Sprintf(`%d new article(s) from %s!%s`, totalNew, domain.DomainName, titles))
+			titles = ""
+			totalNew = 0
+		}
 	}
 }

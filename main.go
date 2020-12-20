@@ -50,8 +50,9 @@ func main() {
 	}
 
 	go func() {
-		InitCronHourlyCrawler()
+		// InitCronHourlyCrawlerByRSS()
 		// InitCronBotFetchUpdate()
+		InitCronHourlyCrawlerByURL()
 	}()
 
 	r.Run(":3000")

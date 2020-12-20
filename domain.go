@@ -2,18 +2,27 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
+	"github.com/gocolly/colly"
 	DB "github.com/samaita/autokata/sql"
 )
 
 type Domain struct {
-	DomainID   int64     `json:"domain_id"`
-	DomainName string    `json:"domain_name"`
-	DomainURL  string    `json:"domain_url"`
-	FeedsURL   string    `json:"feeds_url"`
-	CreateTime time.Time `json:"create_time"`
+	DomainID      int64     `json:"domain_id"`
+	DomainName    string    `json:"domain_name"`
+	DomainURL     string    `json:"domain_url"`
+	FeedsURL      string    `json:"feeds_url"`
+	CreateTime    time.Time `json:"create_time"`
+	TitlePos      string    `json:"title_pos"`
+	SummaryPos    string    `json:"summary_pos"`
+	CoverImagePos string    `json:"cover_image_pos"`
+	ListImagePos  string    `json:"list_image_pos"`
+	ContentPos    string    `json:"content_pos"`
+	URLPos        string    `json:"url_pos"`
 }
 
 func getAllDomain() ([]Domain, error) {
@@ -118,4 +127,73 @@ func (d *Domain) remove() error {
 	}
 	tx.Commit()
 	return nil
+}
+
+func (d *Domain) getAllPos() error {
+	var (
+		errQuery error
+	)
+
+	query := `
+	SELECT
+		title_pos,
+		summary_pos,
+		cover_image_pos,
+		list_image_pos,
+		content_pos,
+		url_pos 
+	FROM db_domain_mapping
+	WHERE domain_id = $1`
+	errQuery = DB.Collection.Main.QueryRowx(query, d.DomainID).Scan(&d.TitlePos, &d.SummaryPos, &d.CoverImagePos, &d.ListImagePos, &d.ContentPos, &d.URLPos)
+	if errQuery != nil && errQuery != sql.ErrNoRows {
+		log.Println(errQuery, query)
+		return errQuery
+	}
+
+	return errQuery
+}
+
+func (d *Domain) getURLFeed() ([]Feed, error) {
+	var (
+		arrFeed                                     []Feed
+		arrTitle, arrURL, arrCoverImage, arrSummary []string
+		err                                         error
+	)
+
+	c := colly.NewCollector()
+
+	c.OnHTML(d.TitlePos, func(e *colly.HTMLElement) {
+		arrTitle = append(arrTitle, e.Text)
+	})
+	c.OnHTML(d.URLPos, func(e *colly.HTMLElement) {
+		arrURL = append(arrURL, e.Attr("href"))
+	})
+	c.OnHTML(d.CoverImagePos, func(e *colly.HTMLElement) {
+		if strings.Contains(e.Attr("src"), "http://") || strings.Contains(e.Attr("src"), "https://") {
+			arrCoverImage = append(arrCoverImage, e.Attr("src"))
+		} else {
+			arrCoverImage = append(arrCoverImage, e.Attr("data-src"))
+		}
+	})
+	c.OnHTML(d.SummaryPos, func(e *colly.HTMLElement) {
+		arrSummary = append(arrSummary, e.Text)
+	})
+
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println("Visiting", d.FeedsURL)
+	})
+	c.Visit(d.FeedsURL)
+
+	if len(arrTitle) == len(arrURL) && len(arrCoverImage) == len(arrSummary) && len(arrTitle) == len(arrCoverImage) {
+		for i, title := range arrTitle {
+			f := Feed{
+				ArticleTitle:      title,
+				ArticleURL:        arrURL[i],
+				ArticleSummary:    arrSummary[i],
+				ArticleCoverImage: arrCoverImage[i],
+			}
+			arrFeed = append(arrFeed, f)
+		}
+	}
+	return arrFeed, err
 }
