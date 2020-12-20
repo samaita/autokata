@@ -166,7 +166,11 @@ func (d *Domain) getURLFeed() ([]Feed, error) {
 		arrTitle = append(arrTitle, e.Text)
 	})
 	c.OnHTML(d.URLPos, func(e *colly.HTMLElement) {
-		arrURL = append(arrURL, e.Attr("href"))
+		if strings.Contains(e.Attr("href"), "http://") || strings.Contains(e.Attr("href"), "https://") {
+			arrURL = append(arrURL, e.Attr("href"))
+		} else {
+			arrURL = append(arrURL, d.DomainURL+e.Attr("href"))
+		}
 	})
 	c.OnHTML(d.CoverImagePos, func(e *colly.HTMLElement) {
 		if strings.Contains(e.Attr("src"), "http://") || strings.Contains(e.Attr("src"), "https://") {

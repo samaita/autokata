@@ -23,7 +23,7 @@ func InitCronHourlyCrawlerByRSS() {
 
 func InitCronHourlyCrawlerByURL() {
 	c := cron.New()
-	rule := "* * * * *"
+	rule := "0 * * * *"
 	log.Println("Cron HourlyCrawler By URL Scheduled:", rule)
 	c.AddFunc(rule, func() {
 		log.Println("Cron HourlyCrawler By URL Started")
@@ -168,8 +168,11 @@ func handleCronFetchBatchURL() {
 			feed.CrawlLogID = crawl.CrawlLogID
 			feed.DomainID = crawl.DomainID
 
-			if isExist, errExist = feed.isURLExist(); errExist != nil || isExist {
-				log.Println(errExist, feed.ArticleURL, "Exist:", isExist)
+			if isExist, errExist = feed.isURLExist(); errExist != nil {
+				log.Println(errExist, feed.ArticleURL)
+				continue
+			}
+			if isExist {
 				continue
 			}
 
