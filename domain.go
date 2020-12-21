@@ -17,6 +17,7 @@ type Domain struct {
 	DomainURL     string    `json:"domain_url"`
 	FeedsURL      string    `json:"feeds_url"`
 	CreateTime    time.Time `json:"create_time"`
+	JSOnly        bool      `json:"js_only"`
 	TitlePos      string    `json:"title_pos"`
 	SummaryPos    string    `json:"summary_pos"`
 	CoverImagePos string    `json:"cover_image_pos"`
@@ -33,6 +34,39 @@ func getAllDomain() ([]Domain, error) {
 
 	query := "SELECT domain_id, domain_name, domain_url, feeds_url, create_time FROM db_domain"
 	rows, errQuery := DB.Collection.Main.Queryx(query)
+	if errQuery != nil {
+		log.Println(errQuery, query)
+		return Domains, errQuery
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			d Domain
+			t string
+		)
+		if errScan = rows.Scan(&d.DomainID, &d.DomainName, &d.DomainURL, &d.FeedsURL, &t); errScan != nil {
+			log.Println(errScan)
+			continue
+		}
+		if d.CreateTime, errParse = time.Parse(time.RFC3339, t); errParse != nil {
+			log.Println(errParse, t)
+			continue
+		}
+		Domains = append(Domains, d)
+	}
+
+	return Domains, nil
+}
+
+func getDomainWithJSOnlyParam(JSOnly bool) ([]Domain, error) {
+	var (
+		errParse, errQuery, errScan error
+		Domains                     []Domain
+	)
+
+	query := "SELECT domain_id, domain_name, domain_url, feeds_url, create_time FROM db_domain WHERE js_only = $1"
+	rows, errQuery := DB.Collection.Main.Queryx(query, fmt.Sprint(JSOnly))
 	if errQuery != nil {
 		log.Println(errQuery, query)
 		return Domains, errQuery
@@ -76,7 +110,8 @@ func (d *Domain) add() error {
 			domain_name,
 			domain_url,
 			feeds_url,
-			create_time
+			create_time,
+			js_only
 		)
 		VALUES ($1, $2, $3, $4)
 	`
@@ -85,7 +120,7 @@ func (d *Domain) add() error {
 		log.Println(errQuery, query)
 		return errQuery
 	}
-	result, err := tx.Exec(query, d.DomainName, d.DomainURL, d.FeedsURL, time.Now().UTC().Format(time.RFC3339))
+	result, err := tx.Exec(query, d.DomainName, d.DomainURL, d.FeedsURL, time.Now().UTC().Format(time.RFC3339), fmt.Sprint(d.JSOnly))
 	if err != nil {
 		return err
 	}

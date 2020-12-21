@@ -137,7 +137,7 @@ func handleCronFetchBatchURL() {
 		listDomain                                                  []Domain
 	)
 
-	if listDomain, errGetAllDomain = getAllDomain(); errGetAllDomain != nil {
+	if listDomain, errGetAllDomain = getDomainWithJSOnlyParam(false); errGetAllDomain != nil {
 		log.Println(errGetAllDomain)
 		return
 	}
