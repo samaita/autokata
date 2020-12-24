@@ -154,9 +154,12 @@ func handleCronFetchBatchURL() {
 			log.Println(errGetAllPos, domain.DomainURL)
 			continue
 		}
-		if feeds, errGetURLFeed = domain.getURLFeed(); errGetURLFeed != nil {
-			log.Println(errGetURLFeed, domain.DomainURL)
-			continue
+		if feeds, errGetURLFeed = domain.getURLFeedV2(); errGetURLFeed != nil {
+			log.Println(errGetURLFeed, domain.DomainURL, "Retrying..")
+			if feeds, errGetURLFeed = domain.getURLFeed(); errGetURLFeed != nil {
+				log.Println(errGetURLFeed, domain.DomainURL, "Give Up..")
+				continue
+			}
 		}
 
 		for _, feed := range feeds {

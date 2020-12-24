@@ -7,6 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
+	"github.com/geziyor/geziyor"
+	"github.com/geziyor/geziyor/client"
 	"github.com/gocolly/colly"
 	DB "github.com/samaita/autokata/sql"
 )
@@ -222,6 +225,63 @@ func (d *Domain) getURLFeed() ([]Feed, error) {
 		fmt.Println("Visiting", d.FeedsURL)
 	})
 	c.Visit(d.FeedsURL)
+
+	if len(arrTitle) == len(arrURL) && len(arrCoverImage) == len(arrSummary) && len(arrTitle) == len(arrCoverImage) {
+		for i, title := range arrTitle {
+			f := Feed{
+				ArticleTitle:      title,
+				ArticleURL:        arrURL[i],
+				ArticleSummary:    arrSummary[i],
+				ArticleCoverImage: arrCoverImage[i],
+			}
+			arrFeed = append(arrFeed, f)
+		}
+	}
+	return arrFeed, err
+}
+
+func (d *Domain) getURLFeedV2() ([]Feed, error) {
+	var (
+		arrFeed                                     []Feed
+		arrTitle, arrURL, arrCoverImage, arrSummary []string
+		err                                         error
+		isHTML                                      bool
+	)
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			g.GetRendered(d.FeedsURL, g.Opt.ParseFunc)
+		},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			isHTML = r.IsHTML()
+			if isHTML {
+				r.HTMLDoc.Find(d.TitlePos).Each(func(_ int, s *goquery.Selection) {
+					arrTitle = append(arrTitle, s.Text())
+				})
+				r.HTMLDoc.Find(d.URLPos).Each(func(_ int, s *goquery.Selection) {
+					if href, ok := s.Attr("href"); ok {
+						if strings.Contains(href, "http://") || strings.Contains(href, "https://") {
+							arrURL = append(arrURL, href)
+						} else {
+							arrURL = append(arrURL, d.DomainURL+href)
+						}
+					}
+				})
+				r.HTMLDoc.Find(d.CoverImagePos).Each(func(_ int, s *goquery.Selection) {
+					if href, ok := s.Attr("src"); ok {
+						arrCoverImage = append(arrCoverImage, href)
+					}
+				})
+				r.HTMLDoc.Find(d.SummaryPos).Each(func(_ int, s *goquery.Selection) {
+					arrSummary = append(arrSummary, s.Text())
+				})
+			}
+		},
+	}).Start()
+
+	if !isHTML {
+		return arrFeed, fmt.Errorf("Not an HTML")
+	}
 
 	if len(arrTitle) == len(arrURL) && len(arrCoverImage) == len(arrSummary) && len(arrTitle) == len(arrCoverImage) {
 		for i, title := range arrTitle {
