@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -49,10 +52,15 @@ func main() {
 		defaultRoute.GET("/feed/fetch", handleFeedFetch)
 	}
 
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		// InitCronHourlyCrawlerByRSS()
 		// InitCronBotFetchUpdate()
 		InitCronHourlyCrawlerByURL()
+		<-c
+		log.Println("APP STOPPED")
+		os.Exit(1)
 	}()
 
 	r.Run(":3000")
