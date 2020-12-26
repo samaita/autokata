@@ -14,6 +14,11 @@ import (
 	DB "github.com/samaita/autokata/sql"
 )
 
+const (
+	DOMAIN_ACTIVE   = 1
+	DOMAIN_INACTIVE = 0
+)
+
 type Domain struct {
 	DomainID      int64     `json:"domain_id"`
 	DomainName    string    `json:"domain_name"`
@@ -35,8 +40,8 @@ func getAllDomain() ([]Domain, error) {
 		Domains                     []Domain
 	)
 
-	query := "SELECT domain_id, domain_name, domain_url, feeds_url, create_time FROM db_domain"
-	rows, errQuery := DB.Collection.Main.Queryx(query)
+	query := "SELECT domain_id, domain_name, domain_url, feeds_url, create_time FROM db_domain WHERE status = $1"
+	rows, errQuery := DB.Collection.Main.Queryx(query, DOMAIN_ACTIVE)
 	if errQuery != nil {
 		log.Println(errQuery, query)
 		return Domains, errQuery
@@ -153,13 +158,13 @@ func (d *Domain) isExist() (bool, error) {
 }
 
 func (d *Domain) remove() error {
-	query := `DELETE FROM db_domain WHERE domain_url = $1`
+	query := `UPDATE db_domain SET status = $1, update_time = $2 WHERE domain_url = $3`
 	tx, errQuery := DB.Collection.Main.Beginx()
 	if errQuery != nil {
 		log.Println(errQuery, query)
 		return errQuery
 	}
-	_, err := tx.Exec(query, d.DomainURL)
+	_, err := tx.Exec(query, DOMAIN_INACTIVE, time.Now().UTC().Format(time.RFC3339), d.DomainURL)
 	if err != nil {
 		return err
 	}
