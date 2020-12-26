@@ -55,9 +55,9 @@ func main() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		// InitCronHourlyCrawlerByRSS()
-		// InitCronBotFetchUpdate()
+		InitCronHourlyCrawlerByRSS()
 		InitCronHourlyCrawlerByURL()
+		// InitCronBotFetchUpdate()
 		<-c
 		log.Println("APP STOPPED")
 		os.Exit(1)

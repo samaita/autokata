@@ -77,10 +77,10 @@ func handleCronFetchBatchRSS() {
 		errGetAllDomain error
 		totalNew        int
 		titles          string
+		listDomain      []Domain
 	)
 
-	listDomain, errGetAllDomain := getAllDomain()
-	if errGetAllDomain != nil {
+	if listDomain, errGetAllDomain = getDomainWithType(DOMAIN_FETCH_TYPE_RSS); errGetAllDomain != nil {
 		log.Println(errGetAllDomain)
 		return
 	}
