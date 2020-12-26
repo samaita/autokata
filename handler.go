@@ -19,6 +19,10 @@ func handleDomainAdd(c *gin.Context) {
 	domain.DomainName = c.PostForm("domain_name")
 	domain.DomainURL = c.PostForm("domain_url")
 	domain.FeedsURL = c.PostForm("feeds_url")
+	domain.TitlePos = c.PostForm("title_pos")
+	domain.URLPos = c.PostForm("url_pos")
+	domain.SummaryPos = c.PostForm("summary_pos")
+	domain.CoverImagePos = c.PostForm("cover_image_pos")
 	if !domain.validate() {
 		HTTPBadRequest(c, fmt.Errorf("Bad Input").Error(), response)
 		return
@@ -29,6 +33,33 @@ func handleDomainAdd(c *gin.Context) {
 			err = fmt.Errorf("Domain already exists")
 		}
 		HTTPInternalServerError(c, err.Error(), response)
+		return
+	}
+
+	if domain.isRSS() {
+		if err = domain.testRSS(); err != nil {
+			HTTPInternalServerError(c, err.Error(), response)
+			return
+		}
+	} else {
+		if !domain.validateMapping() {
+			HTTPBadRequest(c, fmt.Errorf("Bad Input for Mapping").Error(), response)
+			return
+		}
+		if err = domain.testMapping(); err != nil {
+			HTTPInternalServerError(c, err.Error(), response)
+			return
+		}
+		if domain.Status == DOMAIN_ACTIVE {
+			if err = domain.addMapping(); err != nil {
+				HTTPInternalServerError(c, err.Error(), response)
+				return
+			}
+		}
+	}
+
+	if domain.Status != DOMAIN_ACTIVE {
+		HTTPBadRequest(c, fmt.Errorf("Mapping Invalid, RSS Invalid, or JS Only").Error(), response)
 		return
 	}
 
