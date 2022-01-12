@@ -1,6 +1,6 @@
-run:
+dev:
 	@echo "Build & Running"
-	@go build -o autokata && ./autokata
+	@air
 deploy:
 	@go build -o autokata
 	@docker build -t autokata .

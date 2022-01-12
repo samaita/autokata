@@ -2,3 +2,4 @@ DB
 *.db
 autokata
 credential
+vendor

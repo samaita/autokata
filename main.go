@@ -2,66 +2,36 @@ package main
 
 import (
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
-	DB "github.com/samaita/autokata/sql"
 )
-
-var (
-	APITimeout = 60 * time.Second
-
-	Bot              TelegramBot
-	botToken, chatID string
-	err              error
-)
-
-func init() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
-	DB.InitDB()
-
-	// set to multiple value, separate init to another file
-	if botToken, err = getKV("telegram_bot_token"); err != nil {
-		log.Fatalln(err)
-	}
-	if chatID, err = getKV("telegram_chat_id"); err != nil {
-		log.Fatalln(err)
-	}
-
-	Bot = NewTelegramBot(botToken, chatID)
-}
 
 func main() {
-	r := gin.New()
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
+	gin.SetMode(gin.ReleaseMode)
 
-	defaultRoute := r.Group("/")
-	defaultRoute.Use(
-		basicMiddleware(),
-	)
-	{
-		defaultRoute.POST("/domain/add", handleDomainAdd)
-		defaultRoute.POST("/domain/remove", handleDomainRemove)
-		defaultRoute.GET("/domain/list", handleDomainList)
-		defaultRoute.GET("/feed/list", handleFeedList)
-		defaultRoute.GET("/feed/fetch", handleFeedFetch)
+	router := gin.Default()
+	router.Use(gin.Recovery())
+
+	router.GET("/status", status)
+
+	server := &http.Server{
+		Addr:    "localhost:8080",
+		Handler: router,
 	}
 
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		InitCronHourlyCrawlerByRSS()
-		InitCronHourlyCrawlerByURL()
-		// InitCronBotFetchUpdate()
-		<-c
-		log.Println("APP STOPPED")
-		os.Exit(1)
-	}()
+	log.Printf("Listening at %s", "http://localhost:8080")
 
-	r.Run(":3000")
+	// Start serving traffic
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("listen: %s\n", err)
+	}
+}
+
+// status endpoint to expose service livenessprobe
+func status(c *gin.Context) {
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+	})
 }
